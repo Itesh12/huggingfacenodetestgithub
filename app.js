@@ -3,39 +3,50 @@ import express from 'express';
 import axios from 'axios';
 import dotenv from 'dotenv';
 
-dotenv.config();
+dotenv.config(); // Load environment variables from .env file
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(express.json());
 
+app.get('/', (req, res) => {
+  res.send('Hello, world! This is a basic GET request.');
+});
+
 app.post('/generate-image', async (req, res) => {
   const { prompt } = req.body;
 
-    try {
-        // Call Hugging Face API for image generation using stable-diffusion-xl-base-1.0
-            const response = await axios.post(
-                  'https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0',
-                        { inputs: prompt },
-                              {
-                                      headers: {
-                                                Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
-                                                        },
-                                                                responseType: 'arraybuffer',
-                                                                      }
-                                                                          );
+    if (!prompt) {
+        return res.status(400).json({ error: 'Prompt is required' });
+          }
 
-                                                                              // Convert the image to base64 to return as a URL
-                                                                                  const base64Image = Buffer.from(response.data, 'binary').toString('base64');
-                                                                                      const imageUrl = `data:image/png;base64,${base64Image}`;
+            // Log API key to ensure it's being loaded
+              console.log('Using API Key:', process.env.HUGGINGFACE_API_KEY);
 
-                                                                                          res.status(200).json({ imageUrl });
-                                                                                            } catch (error) {
-                                                                                                res.status(500).json({ message: 'Error generating image', error: error.message });
-                                                                                                  }
-                                                                                                  });
+                try {
+                    const response = await axios.post(
+                          'https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0',
+                                { inputs: prompt },
+                                      {
+                                              headers: {
+                                                        Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+                                                                  'Content-Type': 'application/json',
+                                                                          },
+                                                                                  responseType: 'arraybuffer',
+                                                                                        }
+                                                                                            );
 
-                                                                                                  app.listen(port, () => {
-                                                                                                    console.log(`Server is running on port ${port}`);
-                                                                                                    });
+                                                                                                const base64Image = Buffer.from(response.data, 'binary').toString('base64');
+                                                                                                    const imageUrl = `data:image/png;base64,${base64Image}`;
+
+                                                                                                        res.status(200).json({ imageUrl });
+                                                                                                          } catch (error) {
+                                                                                                              console.error('Error generating image:', error.response?.status, error.response?.data);
+                                                                                                                  res.status(500).json({ error: 'Error generating image' });
+                                                                                                                    }
+                                                                                                                    });
+
+                                                                                                                    app.listen(port, () => {
+                                                                                                                      console.log(`Server is running on port ${port}`);
+                                                                                                                      });
