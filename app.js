@@ -39,41 +39,45 @@ if (!existsSync(imagesDir)) {
 
                   try {
                       const response = await axios.post(
-                            'https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0',
-                                  { inputs: prompt },
-                                        {
-                                                headers: {
-                                                          Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
-                                                                    'Content-Type': 'application/json',
-                                                                            },
-                                                                                    responseType: 'arraybuffer',
-                                                                                          }
-                                                                                              );
+                            'https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-dev',
+                                  { inputs: prompt,height:1024,
+                                      width:1024,
+                                          guidance_scale:3.5,
+                                              num_inference_steps:50,
+                                                  max_sequence_length:512, },
+                                                        {
+                                                                headers: {
+                                                                          Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+                                                                                    'Content-Type': 'application/json',
+                                                                                            },
+                                                                                                    responseType: 'arraybuffer',
+                                                                                                          }
+                                                                                                              );
 
-                                                                                                  // Generate a unique filename for the image
-                                                                                                      const filename = `${uuidv4()}.png`;
-                                                                                                          const filePath = join(imagesDir, filename);
+                                                                                                                  // Generate a unique filename for the image
+                                                                                                                      const filename = `${uuidv4()}.png`;
+                                                                                                                          const filePath = join(imagesDir, filename);
 
-                                                                                                              // Save the image to the 'images' directory
-                                                                                                                  writeFileSync(filePath, response.data);
+                                                                                                                              // Save the image to the 'images' directory
+                                                                                                                                  writeFileSync(filePath, response.data);
 
-                                                                                                                      // Return the URL to the saved image
-                                                                                                                          const imageUrl = `${req.protocol}://${req.get('host')}/images/${filename}`;
-                                                                                                                              res.status(200).json({ imageUrl });
+                                                                                                                                      // Return the URL to the saved image
+                                                                                                                                          const imageUrl = `${req.protocol}://${req.get('host')}/images/${filename}`;
+                                                                                                                                              res.status(200).json({ imageUrl });
 
-                                                                                                                                } catch (error) {
-                                                                                                                                    // Detailed error logging
-                                                                                                                                        console.error('Error generating image:', error.message);
-                                                                                                                                            if (error.response) {
-                                                                                                                                                  console.error('Status:', error.response.status);        // Log HTTP status
-                                                                                                                                                        console.error('Data:', error.response.data);            // Log response data
-                                                                                                                                                            } else {
-                                                                                                                                                                  console.error('Error without response:', error);
-                                                                                                                                                                      }
-                                                                                                                                                                          res.status(500).json({ error: 'Error generating image', details: error.message });
-                                                                                                                                                                            }
-                                                                                                                                                                            });
+                                                                                                                                                } catch (error) {
+                                                                                                                                                    // Detailed error logging
+                                                                                                                                                        console.error('Error generating image:', error.message);
+                                                                                                                                                            if (error.response) {
+                                                                                                                                                                  console.error('Status:', error.response.status);        // Log HTTP status
+                                                                                                                                                                        console.error('Data:', error.response.data);            // Log response data
+                                                                                                                                                                            } else {
+                                                                                                                                                                                  console.error('Error without response:', error);
+                                                                                                                                                                                      }
+                                                                                                                                                                                          res.status(500).json({ error: 'Error generating image', details: error.message });
+                                                                                                                                                                                            }
+                                                                                                                                                                                            });
 
-                                                                                                                                                                            app.listen(port, () => {
-                                                                                                                                                                              console.log(`Server is running on port ${port}`);
-                                                                                                                                                                              });
+                                                                                                                                                                                            app.listen(port, () => {
+                                                                                                                                                                                              console.log(`Server is running on port ${port}`);
+                                                                                                                                                                                              });
