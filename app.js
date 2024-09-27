@@ -2,7 +2,7 @@ import express from 'express';
 import axios from 'axios';
 import dotenv from 'dotenv';
 // Import Node.js built-in modules with ES module syntax
-import { writeFileSync } from 'fs';
+import { writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { fileURLToPath } from 'url';
@@ -11,52 +11,69 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-dotenv.config(); // Load environment variables from .env file
+// Load environment variables from .env file
+dotenv.config();
 
-const app = express();
-const port = process.env.PORT || 3000;
+// Create the 'images' directory if it doesn't exist
+const imagesDir = join(__dirname, 'images');
+if (!existsSync(imagesDir)) {
+  mkdirSync(imagesDir);  // Create the directory
+  }
 
-app.use(express.json());
-// Serve images statically
-app.use('/images', express.static(join(__dirname, 'images')));
+  const app = express();
+  const port = process.env.PORT || 3000;
 
-app.post('/generate-image', async (req, res) => {
-  const { prompt } = req.body;
+  app.use(express.json());
+  // Serve images statically
+  app.use('/images', express.static(imagesDir));
 
-    if (!prompt) {
-        return res.status(400).json({ error: 'Prompt is required' });
-          }
+  app.post('/generate-image', async (req, res) => {
+    const { prompt } = req.body;
 
-            try {
-                const response = await axios.post(
-                      'https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0',
-                            { inputs: prompt },
-                                  {
-                                          headers: {
-                                                    Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
-                                                              'Content-Type': 'application/json',
-                                                                      },
-                                                                              responseType: 'arraybuffer',
-                                                                                    }
-                                                                                        );
+      if (!prompt) {
+          return res.status(400).json({ error: 'Prompt is required' });
+            }
 
-                                                                                            // Generate a unique filename for the image
-                                                                                                const filename = `${uuidv4()}.png`;
-                                                                                                    const filePath = join(__dirname, 'images', filename);
+              // Log API key to ensure it's being loaded
+                console.log('HUGGINGFACE_API_KEY:', process.env.HUGGINGFACE_API_KEY);
 
-                                                                                                        // Save the image to the 'images' directory
-                                                                                                            writeFileSync(filePath, response.data);
+                  try {
+                      const response = await axios.post(
+                            'https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0',
+                                  { inputs: prompt },
+                                        {
+                                                headers: {
+                                                          Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+                                                                    'Content-Type': 'application/json',
+                                                                            },
+                                                                                    responseType: 'arraybuffer',
+                                                                                          }
+                                                                                              );
 
-                                                                                                                // Return the URL to the saved image
-                                                                                                                    const imageUrl = `${req.protocol}://${req.get('host')}/images/${filename}`;
-                                                                                                                        res.status(200).json({ imageUrl });
+                                                                                                  // Generate a unique filename for the image
+                                                                                                      const filename = `${uuidv4()}.png`;
+                                                                                                          const filePath = join(imagesDir, filename);
 
-                                                                                                                          } catch (error) {
-                                                                                                                              console.error('Error generating image:', error.response?.status, error.response?.data);
-                                                                                                                                  res.status(500).json({ error: 'Error generating image' });
-                                                                                                                                    }
-                                                                                                                                    });
+                                                                                                              // Save the image to the 'images' directory
+                                                                                                                  writeFileSync(filePath, response.data);
 
-                                                                                                                                    app.listen(port, () => {
-                                                                                                                                      console.log(`Server is running on port ${port}`);
-                                                                                                                                      });
+                                                                                                                      // Return the URL to the saved image
+                                                                                                                          const imageUrl = `${req.protocol}://${req.get('host')}/images/${filename}`;
+                                                                                                                              res.status(200).json({ imageUrl });
+
+                                                                                                                                } catch (error) {
+                                                                                                                                    // Detailed error logging
+                                                                                                                                        console.error('Error generating image:', error.message);
+                                                                                                                                            if (error.response) {
+                                                                                                                                                  console.error('Status:', error.response.status);        // Log HTTP status
+                                                                                                                                                        console.error('Data:', error.response.data);            // Log response data
+                                                                                                                                                            } else {
+                                                                                                                                                                  console.error('Error without response:', error);
+                                                                                                                                                                      }
+                                                                                                                                                                          res.status(500).json({ error: 'Error generating image', details: error.message });
+                                                                                                                                                                            }
+                                                                                                                                                                            });
+
+                                                                                                                                                                            app.listen(port, () => {
+                                                                                                                                                                              console.log(`Server is running on port ${port}`);
+                                                                                                                                                                              });
