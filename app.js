@@ -6,7 +6,7 @@ import { writeFileSync, existsSync, mkdirSync } from "fs";
 import { join, dirname } from "path";
 import { v4 as uuidv4 } from "uuid";
 import { fileURLToPath } from "url";
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // Access your API key as an environment variable
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
