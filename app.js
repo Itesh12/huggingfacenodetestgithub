@@ -250,7 +250,7 @@ app.post("/convert-to-audio", (req, res) => {
 
   try {
     // Convert the prompt to speech
-    const gtts = new gTTS(prompt, "hi");
+    const gtts = new gTTS(prompt, "en");
 
     // Generate a unique filename for the audio file
     const filename = `${uuidv4()}.mp3`;
