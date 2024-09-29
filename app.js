@@ -133,8 +133,7 @@ import { join, dirname } from "path";
 import { v4 as uuidv4 } from "uuid";
 import { fileURLToPath } from "url";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import gTTS from 'gtts'; // Import gTTS
-
+import gTTS from "gtts"; // Import gTTS
 
 // Load environment variables from .env file
 dotenv.config();
@@ -251,7 +250,7 @@ app.post("/convert-to-audio", (req, res) => {
 
   try {
     // Convert the prompt to speech
-    const gtts = new gTTS(prompt, "en");
+    const gtts = new gTTS(prompt, "hi");
 
     // Generate a unique filename for the audio file
     const filename = `${uuidv4()}.mp3`;
