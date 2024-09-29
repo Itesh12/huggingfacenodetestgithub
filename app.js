@@ -87,6 +87,43 @@ app.post("/generate-image", async (req, res) => {
   }
 });
 
+
+////////////////////////////////// Text To Speech ///////////////////////////////////////
+app.post("/text-to-speech", async (req, res) => {
+    const { text } = req.body;
+  
+    if (!text) {
+      return res.status(400).json({ error: "Text is required" });
+    }
+  
+    try {
+      const response = await axios.post(
+        "https://api-inference.huggingface.co/models/myshell-ai/MeloTTS-English",
+        {
+          inputs: text,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`, // Your Hugging Face API key
+          },
+          responseType: "arraybuffer", // Expecting audio binary data
+        }
+      );
+  
+      // Send the audio buffer directly as the response
+      res.set("Content-Type", "audio/wav");
+      res.send(response.data);
+    } catch (error) {
+      console.error("Error with Hugging Face API:", error.message);
+      if (error.response) {
+        console.error("Response status:", error.response.status);
+        console.error("Response data:", error.response.data);
+      }
+      res.status(500).json({ error: "Error generating speech", details: error.message });
+    }
+  });
+
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
