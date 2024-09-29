@@ -133,6 +133,8 @@ import { join, dirname } from "path";
 import { v4 as uuidv4 } from "uuid";
 import { fileURLToPath } from "url";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import gTTS from 'gtts'; // Import gTTS
+
 
 // Load environment variables from .env file
 dotenv.config();
@@ -148,6 +150,12 @@ const __dirname = dirname(__filename);
 const imagesDir = join(__dirname, "images");
 if (!existsSync(imagesDir)) {
   mkdirSync(imagesDir);
+}
+
+// Create the 'audio' directory if it doesn't exist
+const audioDir = join(__dirname, "audio");
+if (!existsSync(audioDir)) {
+  mkdirSync(audioDir);
 }
 
 const app = express();
@@ -205,6 +213,8 @@ app.post("/generate-image", async (req, res) => {
   }
 });
 
+//////////////////////////////////////////////////////////////////////////////
+
 app.post("/generateText", async (req, res) => {
   const { prompt } = req.body;
 
@@ -230,6 +240,43 @@ app.post("/generateText", async (req, res) => {
       .json({ error: "Error generating text", details: error.message });
   }
 });
+
+//////////////////////////////////////////////////////////////////////////////////////////
+app.post("/convert-to-audio", (req, res) => {
+  const { prompt } = req.body;
+
+  if (!prompt) {
+    return res.status(400).json({ error: "Prompt is required" });
+  }
+
+  try {
+    // Convert the prompt to speech
+    const gtts = new gTTS(prompt, "en");
+
+    // Generate a unique filename for the audio file
+    const filename = `${uuidv4()}.mp3`;
+    const filePath = join(audioDir, filename);
+
+    // Save the audio file
+    gtts.save(filePath, (err) => {
+      if (err) {
+        throw new Error(err);
+      }
+
+      // Return the URL to the saved audio file
+      const audioUrl = `${req.protocol}://${req.get("host")}/audio/${filename}`;
+      res.status(200).json({ audioUrl });
+    });
+  } catch (error) {
+    console.error("Error generating audio:", error.message);
+    res
+      .status(500)
+      .json({ error: "Error generating audio", details: error.message });
+  }
+});
+
+// Serve audio files statically
+app.use("/audio", express.static(audioDir));
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
