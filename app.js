@@ -6,6 +6,10 @@ import { writeFileSync, existsSync, mkdirSync } from "fs";
 import { join, dirname } from "path";
 import { v4 as uuidv4 } from "uuid";
 import { fileURLToPath } from "url";
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+
+// Access your API key as an environment variable
+const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 
 // Fix for __dirname in ES module context
 const __filename = fileURLToPath(import.meta.url);
@@ -87,42 +91,35 @@ app.post("/generate-image", async (req, res) => {
   }
 });
 
+//////////////////////////////////////////////////////////////////////////
 
-////////////////////////////////// Text To Speech ///////////////////////////////////////
-app.post("/text-to-speech", async (req, res) => {
-    const { text } = req.body;
-  
-    if (!text) {
-      return res.status(400).json({ error: "Text is required" });
+app.post("/text", async (req, res) => {
+  const { prompt } = req.body;
+
+  if (!prompt) {
+    return res.status(400).json({ error: "Prompt is required" });
+  }
+
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    const result = await model.generateContent(prompt);
+    console.log(result.response.text());
+    res.send(result.response.text());
+  } catch (error) {
+    // Detailed error logging
+    console.error("Error:", error.message);
+    if (error.response) {
+      console.error("Status:", error.response.status); // Log HTTP status
+      console.error("Data:", error.response.data); // Log response data
+    } else {
+      console.error("Error without response:", error);
     }
-  
-    try {
-      const response = await axios.post(
-        "https://api-inference.huggingface.co/models/myshell-ai/MeloTTS-English",
-        {
-          inputs: text,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`, // Your Hugging Face API key
-          },
-          responseType: "arraybuffer", // Expecting audio binary data
-        }
-      );
-  
-      // Send the audio buffer directly as the response
-      res.set("Content-Type", "audio/wav");
-      res.send(response.data);
-    } catch (error) {
-      console.error("Error with Hugging Face API:", error.message);
-      if (error.response) {
-        console.error("Response status:", error.response.status);
-        console.error("Response data:", error.response.data);
-      }
-      res.status(500).json({ error: "Error generating speech", details: error.message });
-    }
-  });
+    res
+      .status(500)
+      .json({ error: "Error generating text", details: error.message });
+  }
+});
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
